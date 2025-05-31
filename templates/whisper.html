@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platform Video ASR Berbasis Cloud</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+    <body>
+        <div class="container">
+            <h1>Platform Video <br> dengan Layanan ASR Berbasis Cloud</h1>
+            <p>Gunakan model Whisper dari OpenAI untuk transkripsi audio dari video Anda.</p>
+
+            <form action="/process" method="post" enctype="multipart/form-data" id="inputForm" style="margin-bottom: 20px;">
+                <label for="input_type">Pilih Sumber Video:</label>
+                <select name="input_type" id="input_type" style="margin-left:10px; margin-bottom:10px; padding:4px;">
+                    <option value="youtube">YouTube URL</option>
+                    <option value="mp4_url">URL File .mp4</option>
+                    <option value="upload">Upload File (.mp4)</option>
+                </select>
+                <br>
+                <div id="youtube_input" class="input-group">
+                    <input type="text" name="url" id="url" placeholder="https://youtube.com/..." style="margin-bottom:10px; width: 60%;">
+                </div>
+                <div id="mp4url_input" class="input-group" style="display:none;">
+                    <input type="text" name="mp4_url" id="mp4_url" placeholder="https://example.com/video.mp4" style="margin-bottom:10px; width: 60%;">
+                </div>
+                <div id="file_input" class="input-group" style="display:none;">
+                    <input type="file" name="file" id="file" accept=".mp4" style="margin-bottom:10px;">
+                </div>
+                <br>
+                <button type="submit" style="padding: 6px 18px; background: #007bff; color: #fff; border: none; border-radius: 4px;">Proses</button>
+            </form>
+
+            
+
+            
+
+            {% if video_path %}
+                <h2>Video berhasil diunduh!</h2>
+                <video width="100%" height="auto" controls>
+                    <source src="{{ url_for('static', filename=video_path) }}" type="video/mp4">
+                    Browser Anda tidak mendukung video tag.
+                </video>
+            {% endif %}
+
+            {% if transcription %}
+                <h2>Hasil Transkripsi:</h2>
+                <p>{{ transcription }}</p>
+            {% endif %}
+        </div>
+
+    </body>
+    <script>
+        $('#input_type').on('change', function() {
+            $('#youtube_input').hide();
+            $('#mp4url_input').hide();
+            $('#file_input').hide();
+            if (this.value === 'youtube') {
+                $('#youtube_input').show();
+            } else if (this.value === 'mp4_url') {
+                $('#mp4url_input').show();
+            } else if (this.value === 'upload') {
+                $('#file_input').show();
+            }
+        });
+        $(document).ready(function() {
+            $('#input_type').trigger('change');
+        });
+    </script>
+        
+    
+    
+
+
+
+</html>
