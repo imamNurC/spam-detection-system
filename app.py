@@ -1,11 +1,11 @@
 from flask import Flask, request, jsonify, render_template
-import joblib
+# import joblib
 import os
 from flask_cors import CORS
 
 # Load the trained model and vectorizer
-loaded_model = joblib.load('email_spam_model_indo.pkl')
-vectorizer = joblib.load('vectorizer.pkl')
+# loaded_model = joblib.load('email_spam_model_indo.pkl')
+# vectorizer = joblib.load('vectorizer.pkl')
 
 # Initialize the Flask app
 app = Flask(__name__)
@@ -63,6 +63,81 @@ def predict():
 
 
 
+from flask import Flask, request, jsonify
+from moviepy.editor import VideoFileClip
+# from flask_ngrok import run_with_ngrok
+import yt_dlp
+# import openai, whisper
+# openai.api_key = ""
+
+app = Flask(__name__)
+
+
+# Load Whisper model sekali saja saat server dinyalakan
+# model = whisper.load_model("small")
+
+def download_youtube_video(url, video_path='video.webm'):
+    ydl_opts = {
+        'format': 'bestvideo[ext=webm]+bestaudio[ext=webm]/best[ext=webm]/best',
+        'outtmpl': video_path,
+        'quiet': True
+    }
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+        return video_path
+    except Exception as e:
+        print(f"Download error: {e}")
+        return None
+
+def extract_audio(video_path, audio_path='output.mp3'):
+    try:
+        video = VideoFileClip(video_path)
+        audio = video.audio
+        audio.write_audiofile(audio_path)
+        video.close()
+        return audio_path
+    except Exception as e:
+        print(f"Audio extraction error: {e}")
+        return None
+
+
+@app.route('/transcribe', methods=['POST'])
+def transcribe():
+    url = request.json.get("youtube_url")
+    # url = 'https://www.youtube.com/watch?v=fwyV8c_2c6s'
+    if not url:
+        return jsonify({"error": "youtube_url is required"}), 400
+
+    # video_path = download_youtube_video('https://www.youtube.com/watch?v=fwyV8c_2c6s')
+    video_path = download_youtube_video(url)
+    if not video_path or not os.path.exists(video_path):
+        return jsonify({"error": "Failed to download video"}), 500
+
+    audio_path = extract_audio(video_path)
+    if not audio_path or not os.path.exists(audio_path):
+        return jsonify({"error": "Failed to extract audio"}), 500
+
+    try:
+        result = model.transcribe(audio_path, language='id', verbose=False, fp16=False)
+        text = result["text"]
+    except Exception as e:
+        return jsonify({"error": f"Transcription failed: {str(e)}"}), 500
+    finally:
+        try:
+            if os.path.exists(video_path): os.remove(video_path)
+            if os.path.exists(audio_path): os.remove(audio_path)
+        except Exception as e:
+            print(f"Cleanup error: {e}")
+
+    print(result)
+    # return jsonify({"transcription": text})
+
+###### TESTING ##########
+# @app.route("/")
+# def hello():
+#     return "Whisper inference model is running on Colab with ngrok!"
+
 @app.route('/process_video', methods=['POST'])
 def process_video():
     # Ambil youtube_url dari body request (format JSON)
@@ -73,7 +148,7 @@ def process_video():
         return jsonify({'error': 'youtube_url tidak ditemukan'}), 400
 
     # Log atau print untuk memverifikasi
-    # print("Data yang diterima:", request.json)  
+    # print("Data yang diterima:", request.json)
     print("youtube_url:", youtube_url)         # Untuk melihat nilai youtube_url
 
     # Proses URL YouTube (contoh placeholder untuk proses lebih lanjut)
