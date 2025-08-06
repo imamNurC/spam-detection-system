@@ -13,7 +13,7 @@ openai.api_key = ""
 
 # Initialize the Flask app
 app = Flask(__name__)
-UPLOAD_FOLDER = "static/downloads"
+UPLOAD_FOLDER = "static/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 CORS(app)  
 
@@ -153,6 +153,7 @@ def process_video():
         temp_video = os.path.join(UPLOAD_FOLDER, 'temp_youtube.webm')
         temp_audio = os.path.join(UPLOAD_FOLDER, 'temp_youtube.mp3')
         video_file = download_youtube_video(youtube_url, video_path=temp_video)
+
         if not video_file or not os.path.exists(video_file):
             error = "Gagal mengunduh video dari YouTube."
         else:
@@ -163,28 +164,45 @@ def process_video():
                 try:
                     result = model.transcribe(audio_file, language='id', verbose=False, fp16=False)
                     transcription = result["text"]
+                    video_path = os.path.relpath(video_file, 'static')
                 except Exception as e:
                     error = f"Transkripsi gagal: {str(e)}"
-            # Clean up temp files
+
+            # Clean up
             try:
-                if os.path.exists(temp_video): os.remove(temp_video)
                 if os.path.exists(temp_audio): os.remove(temp_audio)
             except Exception as e:
                 print(f"Cleanup error: {e}")
 
     elif input_type == 'mp4_url' and mp4_url:
+        # Just simulate success for now
         transcription = f"Transkripsi hasil video dari URL MP4: {mp4_url}"
+
     elif input_type == 'upload' and file and file.filename.endswith('.mp4'):
         filename = file.filename
         save_path = os.path.join(UPLOAD_FOLDER, filename)
         file.save(save_path)
-        video_path = f"downloads/{filename}"
-        transcription = f"Transkripsi hasil video dari file upload: {filename}"
+        temp_audio = os.path.join(UPLOAD_FOLDER, f"{os.path.splitext(filename)[0]}.mp3")
+
+        audio_file = extract_audio(save_path, audio_path=temp_audio)
+        if not audio_file or not os.path.exists(audio_file):
+            error = "Gagal mengekstrak audio dari video upload."
+        else:
+            try:
+                result = model.transcribe(audio_file, language='id', verbose=False, fp16=False)
+                transcription = result["text"]
+                video_path = os.path.relpath(save_path, 'static')
+            except Exception as e:
+                error = f"Transkripsi gagal: {str(e)}"
+        # Cleanup
+        try:
+            if os.path.exists(temp_audio): os.remove(temp_audio)
+        except Exception as e:
+            print(f"Cleanup error: {e}")
     else:
         error = "Input tidak valid, silakan coba lagi."
 
     return render_template('whisper.html', video_path=video_path, transcription=transcription, error=error)
-
 
 if __name__ == '__main__':
     app.run(debug=True)
