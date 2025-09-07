@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 # import joblib
-import os
+from jiwer import wer
+import os, re
 from flask_cors import CORS
 from moviepy.editor import VideoFileClip
 import yt_dlp
@@ -44,30 +45,29 @@ def index():
      
 
 # Route to handle the prediction
-# @app.route('/predict', methods=['POST'])
-# def predict():
-#     try:
-#         # Get the email text from the request
-#         data = request.get_json()
-#         email_text = data['email']
+@app.route('/predict', methods=['POST'])
+def predict():
+    try:
+        data = request.get_json()  # Receive JSON from frontend
+        asr_output = data.get("asr_output", "").strip()
+        reference = data.get("reference", "").strip()
 
-#         # Transform the email text using the saved vectorizer
-#         email_vector = vectorizer.transform([email_text])
+        # Cleaning function
+        def clean_text(text):
+            text = re.sub(r"\d+\n\d{2}:\d{2}:\d{2},\d{3} --> \d{2}:\d{2}:\d{2},\d{3}", "", text)
+            return re.sub(r'\s+', ' ', text).strip()
 
-#         # Make prediction using the loaded model
-#         prediction = loaded_model.predict(email_vector)
+        hyp_clean = clean_text(asr_output)
+        ref_clean = clean_text(reference)
 
-#         # Return response based on prediction
-#         if prediction[0] == "spam":
-#             return jsonify({"result": "Pesan ini spam!"})
-#         else:
-#             return jsonify({"result": "Pesan Ini bukan spam"})
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 400
+        # Compute WER
+        error_rate = wer(ref_clean, hyp_clean)
+        error_rate_percent = round(error_rate * 100, 2)
 
+        return jsonify({"result": f"WER: {error_rate_percent}%"})
 
-
-
+    except Exception as e:
+        return jsonify({"error": f"Kesalahan saat menghitung WER: {str(e)}"})
 
 
 

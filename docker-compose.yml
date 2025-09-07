@@ -1,0 +1,16 @@
+services:
+  demo-whisper-2:
+    image: stable:2.2
+    # image: latest:2.1
+    # image: latest:2.0
+    # image: whisper-app:latest
+    container_name: demo-whisper-2
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    networks:
+      - tunnel
+
+networks:
+  tunnel:
+    external: true

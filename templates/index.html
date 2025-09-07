@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Spam Detection</title>
+    <title>WER Calculations</title>
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='style.css') }}"
@@ -12,36 +12,42 @@
   </head>
   <body>
     <div class="container">
-      <h1>Spam Detection</h1>
-      <form id="email-form">
-        <label for="email">Enter the message:</label><br />
-        <textarea id="email" name="email" rows="4" cols="50" required></textarea
-        ><br /><br />
-        <button type="submit">Check Spam</button>
+      <h1>Analisis Hasil Transkripsi</h1>
+      <form id="predict-form">
+        <label for="asr_output">ASR Output (hasil transkripsi):</label>
+        <textarea id="asr_output" name="asr_output" rows="4" cols="50" required></textarea>
+        <br />
+
+        <label for="reference">Reference (teks acuan/ground truth):</label>
+        <textarea id="reference" name="reference" rows="4" cols="50" required></textarea>
+        <br />
+
+        <button type="submit">HITUNG WER</button>
       </form>
 
       <div id="result"></div>
     </div>
 
     <script>
-      // Function to handle form submission and send the data to Flask API
-      // Using jQuery to send the form data as AJAX request
       $(document).ready(function () {
-        $("#email-form").on("submit", function (event) {
+        $("#predict-form").on("submit", function (event) {
           event.preventDefault();
 
-          var emailText = $("#email").val();
+          var asrOutput = $("#asr_output").val();
+          var reference = $("#reference").val();
           var resultDiv = $("#result");
 
-          // Send the email text to Flask using jQuery AJAX
           $.ajax({
-            url: "/predict", // Flask route to send the data to
-            method: "POST", // HTTP method (POST)
-            contentType: "application/json", // Set content type to JSON
-            data: JSON.stringify({ email: emailText }), // Convert form data to JSON
+            url: "/predict",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({
+              asr_output: asrOutput,
+              reference: reference,
+            }),
             success: function (data) {
               if (data.result) {
-                resultDiv.html("Result: " + data.result);
+                resultDiv.html("<b>" + data.result + "</b>");
               } else if (data.error) {
                 resultDiv.html("Error: " + data.error);
               }
